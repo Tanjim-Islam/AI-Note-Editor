@@ -1,5 +1,5 @@
 import React from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 
 export default function Welcome() {
     return (
@@ -10,9 +10,17 @@ export default function Welcome() {
                     <h1 className="text-2xl font-bold text-gray-900 mb-4">
                         Welcome to Notes AI
                     </h1>
-                    <p className="text-gray-600">
+                    <p className="text-gray-600 mb-6">
                         Inertia.js with React is successfully configured!
                     </p>
+                    <div className="text-center">
+                        <Link
+                            href="/login"
+                            className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200"
+                        >
+                            Go to Login
+                        </Link>
+                    </div>
                 </div>
             </div>
         </>
