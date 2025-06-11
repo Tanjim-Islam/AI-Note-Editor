@@ -17,7 +17,28 @@ class AuthController extends Controller
      */
     public function redirectToGoogle()
     {
-        return Socialite::driver('google')->redirect();
+        // Configure Guzzle client with proper SSL certificate for local development
+        $guzzleConfig = [];
+        if (app()->environment('local')) {
+            $certPath = base_path('cacert.pem');
+            if (file_exists($certPath)) {
+                $guzzleConfig['verify'] = $certPath;
+            }
+        }
+        
+        // Create Guzzle client with SSL configuration
+        $guzzleClient = new \GuzzleHttp\Client($guzzleConfig);
+        
+        // Configure Socialite to use our Guzzle client
+        $socialiteDriver = Socialite::driver('google');
+        
+        // Use reflection to set the HTTP client since there's no public method
+        $reflection = new \ReflectionClass($socialiteDriver);
+        $httpClientProperty = $reflection->getProperty('httpClient');
+        $httpClientProperty->setAccessible(true);
+        $httpClientProperty->setValue($socialiteDriver, $guzzleClient);
+        
+        return $socialiteDriver->redirect();
     }
 
     /**
@@ -26,18 +47,26 @@ class AuthController extends Controller
     public function handleGoogleCallback()
     {
         try {
-            // Handle invalid state exception specifically and SSL issues in local development
-            $socialiteDriver = Socialite::driver('google')->stateless();
-            
-            // Disable SSL verification for local development
+            // Configure Guzzle client with proper SSL certificate for local development
+            $guzzleConfig = [];
             if (app()->environment('local')) {
-                $socialiteDriver->setHttpClient(
-                    new \GuzzleHttp\Client([
-                        'verify' => false,
-                        'timeout' => 30
-                    ])
-                );
+                $certPath = base_path('cacert.pem');
+                if (file_exists($certPath)) {
+                    $guzzleConfig['verify'] = $certPath;
+                }
             }
+            
+            // Create Guzzle client with SSL configuration
+            $guzzleClient = new \GuzzleHttp\Client($guzzleConfig);
+            
+            // Configure Socialite to use our Guzzle client
+            $socialiteDriver = Socialite::driver('google');
+            
+            // Use reflection to set the HTTP client since there's no public method
+            $reflection = new \ReflectionClass($socialiteDriver);
+            $httpClientProperty = $reflection->getProperty('httpClient');
+            $httpClientProperty->setAccessible(true);
+            $httpClientProperty->setValue($socialiteDriver, $guzzleClient);
             
             $googleUser = $socialiteDriver->user();
             
