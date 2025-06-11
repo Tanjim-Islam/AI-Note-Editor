@@ -6,9 +6,9 @@ const AvatarWithFallback = ({ user, size, textSize }) => {
     const [imageError, setImageError] = useState(false)
     
     // Debug logging
-    console.log('AvatarWithFallback - user:', user)
-    console.log('AvatarWithFallback - user.avatar:', user.avatar)
-    console.log('AvatarWithFallback - imageError:', imageError)
+    // console.log('AvatarWithFallback - user:', user)
+    // console.log('AvatarWithFallback - user.avatar:', user.avatar)
+    // console.log('AvatarWithFallback - imageError:', imageError)
     
     // Check if avatar exists and is a valid URL
     const hasValidAvatar = user.avatar && typeof user.avatar === 'string' && user.avatar.trim() !== ''

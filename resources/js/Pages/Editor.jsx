@@ -1,42 +1,207 @@
-import { Head } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, router } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
 import App from '../Components/App';
 
 export default function Editor() {
+    const [noteId, setNoteId] = useState(null);
     const [title, setTitle] = useState('Untitled Note');
     const [content, setContent] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [lastSaved, setLastSaved] = useState(null);
+    const [error, setError] = useState(null);
 
-    const handleSave = async () => {
-        setIsSaving(true);
-        // TODO: Implement actual save functionality with API call
-        setTimeout(() => {
-            setIsSaving(false);
-            setLastSaved(new Date());
-        }, 1000);
+    // Get note ID from URL parameters
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
+        if (id) {
+            setNoteId(id);
+            loadNote(id);
+        } else {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // Load note from API
+    const loadNote = async (id) => {
+        try {
+            setIsLoading(true);
+            const response = await fetch(`/api/notes/${id}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                },
+                credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to load note');
+            }
+
+            const note = await response.json();
+            setTitle(note.title || 'Untitled Note');
+            setContent(note.content || '');
+            setLastSaved(new Date(note.updated_at));
+        } catch (err) {
+            setError(err.message);
+            console.error('Error loading note:', err);
+        } finally {
+            setIsLoading(false);
+        }
     };
+
+    // Save note to API
+    const handleSave = async () => {
+        if (!noteId) {
+            alert('Cannot save note: No note ID found');
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            const response = await fetch(`/api/notes/${noteId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    title: title,
+                    content: content
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save note');
+            }
+
+            setLastSaved(new Date());
+        } catch (err) {
+            console.error('Error saving note:', err);
+            alert('Failed to save note. Please try again.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // Delete note
+    const handleDelete = async () => {
+        if (!noteId) {
+            alert('Cannot delete note: No note ID found');
+            return;
+        }
+
+        if (!confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/notes/${noteId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                },
+                credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete note');
+            }
+
+            // Navigate back to dashboard
+            router.visit('/dashboard');
+        } catch (err) {
+            console.error('Error deleting note:', err);
+            alert('Failed to delete note. Please try again.');
+        }
+    };
+
+    // Auto-save functionality
+    useEffect(() => {
+        if (!noteId || isLoading) return;
+
+        const autoSaveTimer = setTimeout(() => {
+            handleSave();
+        }, 2000); // Auto-save after 2 seconds of inactivity
+
+        return () => clearTimeout(autoSaveTimer);
+    }, [title, content, noteId, isLoading]);
 
     const formatLastSaved = (date) => {
         if (!date) return 'Never saved';
         return `Last saved at ${date.toLocaleTimeString()}`;
     };
 
+    // Show loading state
+    if (isLoading) {
+        return (
+            <App>
+                <Head title="Loading..." />
+                <div className="h-screen flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                        <p className="mt-4 text-gray-600">Loading note...</p>
+                    </div>
+                </div>
+            </App>
+        );
+    }
+
+    // Show error state
+    if (error) {
+        return (
+            <App>
+                <Head title="Error" />
+                <div className="h-screen flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="text-red-500 mb-4">
+                            <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Note</h2>
+                        <p className="text-gray-600 mb-4">{error}</p>
+                        <button 
+                            onClick={() => router.visit('/dashboard')}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                        >
+                            Back to Dashboard
+                        </button>
+                    </div>
+                </div>
+            </App>
+        );
+    }
+
     return (
         <App>
-            <Head title="Editor" />
+            <Head title={title || 'Editor'} />
             <div className="h-screen flex flex-col">
                 {/* Editor Header */}
                 <div className="bg-white border-b border-gray-200 px-6 py-4">
                     <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                            <input
-                                type="text"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                className="text-2xl font-bold text-gray-900 border-none outline-none bg-transparent w-full focus:ring-0 p-0"
-                                placeholder="Enter note title..."
-                            />
+                        <div className="flex items-center space-x-4">
+                            <button
+                                onClick={() => router.visit('/dashboard')}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            <div className="flex-1 min-w-0">
+                                <input
+                                    type="text"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    className="text-2xl font-bold text-gray-900 border-none outline-none bg-transparent w-full focus:ring-0 p-0"
+                                    placeholder="Enter note title..."
+                                />
+                            </div>
                         </div>
                         <div className="flex items-center space-x-4">
                             <div className="text-sm text-gray-500">
@@ -128,7 +293,10 @@ export default function Editor() {
                                     <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition duration-150 ease-in-out">
                                         📋 Copy to Clipboard
                                     </button>
-                                    <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition duration-150 ease-in-out">
+                                    <button 
+                                        onClick={handleDelete}
+                                        className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition duration-150 ease-in-out"
+                                    >
                                         🗑️ Delete Note
                                     </button>
                                 </div>
