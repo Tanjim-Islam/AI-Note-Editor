@@ -21,6 +21,10 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // Protected Routes
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function () {
-        return view('dashboard');
+        return Inertia::render('Dashboard');
     })->name('dashboard');
+    
+    Route::get('/editor', function () {
+        return Inertia::render('Editor');
+    })->name('editor');
 });

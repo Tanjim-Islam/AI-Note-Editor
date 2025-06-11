@@ -7,6 +7,8 @@ use Laravel\Socialite\Facades\Socialite;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Exception;
+use Laravel\Socialite\Two\InvalidStateException;
 
 class AuthController extends Controller
 {
@@ -23,13 +25,21 @@ class AuthController extends Controller
      */
     public function handleGoogleCallback()
     {
-        Log::info('Starting Google OAuth callback');
-        
         try {
-            // Get Google user data
-            $googleUser = Socialite::driver('google')->user();
+            // Handle invalid state exception specifically and SSL issues in local development
+            $socialiteDriver = Socialite::driver('google')->stateless();
             
-            Log::info('Google user data retrieved', ['email' => $googleUser->getEmail()]);
+            // Disable SSL verification for local development
+            if (app()->environment('local')) {
+                $socialiteDriver->setHttpClient(
+                    new \GuzzleHttp\Client([
+                        'verify' => false,
+                        'timeout' => 30
+                    ])
+                );
+            }
+            
+            $googleUser = $socialiteDriver->user();
             
             $user = User::firstOrCreate(
                 ['email' => $googleUser->getEmail()],
@@ -40,17 +50,25 @@ class AuthController extends Controller
                 ]
             );
             
-            Log::info('User found/created', ['user_id' => $user->id]);
+            Auth::login($user, true); // Remember the user
             
-            Auth::login($user);
-            Log::info('User logged in successfully');
-            
-            return redirect('/dashboard');
-        } catch (\Exception $e) {
-            Log::error('OAuth callback failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+            Log::info('User logged in successfully', [
+                'user_id' => $user->id,
+                'session_id' => session()->getId(),
+                'auth_check' => Auth::check()
             ]);
+            
+            // Force session regeneration
+            request()->session()->regenerate();
+            
+            return redirect()->intended('/dashboard');
+        } catch (InvalidStateException $e) {
+            Log::error('Invalid state exception during OAuth', ['error' => $e->getMessage()]);
+            // Clear any existing session data and redirect to start fresh
+            session()->flush();
+            return redirect('/login')->with('error', 'Authentication session expired. Please try again.');
+        } catch (Exception $e) {
+            Log::error('Google OAuth failed', ['error' => $e->getMessage()]);
             return redirect('/login')->with('error', 'Authentication failed');
         }
     }
