@@ -52,9 +52,17 @@ class NoteController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $id): JsonResponse
     {
-        //
+        $note = Note::findOrFail($id);
+
+        if ($note->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $note->update($request->only(['title', 'content']));
+
+        return response()->json(['status' => 'updated']);
     }
 
     /**
