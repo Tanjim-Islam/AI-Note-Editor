@@ -80,4 +80,53 @@ class NoteController extends Controller
 
         return response()->json(['status' => 'deleted']);
     }
+
+    /**
+     * Get word count for text using raw PHP service.
+     */
+    public function getWordCount(Request $request): JsonResponse
+    {
+        $request->validate([
+            'text' => 'required|string',
+        ]);
+
+        $text = $request->input('text');
+        
+        // Call the raw PHP word count service
+        $url = url('/raw-php/word_count.php');
+        
+        $postData = json_encode(['text' => $text]);
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Content-Length: ' . strlen($postData)
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+        
+        if ($error) {
+            return response()->json(['error' => 'Failed to connect to word count service: ' . $error], 500);
+        }
+        
+        if ($httpCode !== 200) {
+            return response()->json(['error' => 'Word count service returned error'], 500);
+        }
+        
+        $result = json_decode($response, true);
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return response()->json(['error' => 'Invalid response from word count service'], 500);
+        }
+        
+        return response()->json($result);
+    }
 }

@@ -15,6 +15,7 @@ Route::middleware(['auth', 'web'])->group(function () {
     Route::post('/notes', [NoteController::class, 'store']);
     Route::patch('/notes/{id}', [NoteController::class, 'update']);
     Route::delete('/notes/{id}', [NoteController::class, 'destroy']);
+    Route::post('/notes/word-count', [NoteController::class, 'getWordCount']);
     
     // AI Enhancement Routes
     Route::post('/ai/enhance', [AIController::class, 'enhance']);

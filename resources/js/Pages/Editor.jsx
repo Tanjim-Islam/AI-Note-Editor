@@ -13,6 +13,7 @@ export default function Editor() {
     const [error, setError] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [wasAutoSaved, setWasAutoSaved] = useState(false);
+    const [wordCountData, setWordCountData] = useState({ word_count: 0, character_count: 0, line_count: 0 });
 
     // Get note ID from URL parameters
     useEffect(() => {
@@ -147,6 +148,51 @@ export default function Editor() {
         }, 500);
     };
 
+    // Calculate word count instantly with JavaScript
+    const calculateWordCount = (text) => {
+        if (!text.trim()) {
+            return { word_count: 0, character_count: 0, line_count: 0 };
+        }
+        
+        return {
+            word_count: text.split(/\s+/).filter(word => word.length > 0).length,
+            character_count: text.length,
+            line_count: text.split('\n').length
+        };
+    };
+
+    // Optional backend validation (for demonstration purposes)
+    const validateWordCountWithBackend = async (text) => {
+        if (!text.trim()) return;
+        
+        try {
+            const response = await fetch('/api/notes/word-count', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ text })
+            });
+
+            if (response.ok) {
+                const backendData = await response.json();
+                const frontendData = calculateWordCount(text);
+                
+                // Log any discrepancies for debugging
+                if (backendData.word_count !== frontendData.word_count) {
+                    console.log('Word count discrepancy:', {
+                        backend: backendData.word_count,
+                        frontend: frontendData.word_count
+                    });
+                }
+            }
+        } catch (error) {
+            console.log('Backend word count validation failed:', error.message);
+        }
+    };
+
     // Auto-save functionality
     useEffect(() => {
         if (!noteId || isLoading || isDeleting) return;
@@ -157,6 +203,19 @@ export default function Editor() {
 
         return () => clearTimeout(autoSaveTimer);
     }, [title, content, noteId, isLoading, isDeleting]);
+
+    // Word count effect - instant calculation
+    useEffect(() => {
+        const wordCountData = calculateWordCount(content);
+        setWordCountData(wordCountData);
+        
+        // Optional: validate with backend occasionally (every 10 seconds of inactivity)
+        const validationTimer = setTimeout(() => {
+            validateWordCountWithBackend(content);
+        }, 10000);
+
+        return () => clearTimeout(validationTimer);
+    }, [content]);
 
     const formatLastSaved = (date, wasAuto) => {
         if (!date) return 'Never saved';
@@ -282,15 +341,15 @@ export default function Editor() {
                                 <div className="space-y-2 text-sm text-gray-600">
                                     <div className="flex justify-between">
                                         <span>Words:</span>
-                                        <span>{content.split(/\s+/).filter(word => word.length > 0).length}</span>
+                                        <span>{wordCountData.word_count}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span>Characters:</span>
-                                        <span>{content.length}</span>
+                                        <span>{wordCountData.character_count}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span>Lines:</span>
-                                        <span>{content.split('\n').length}</span>
+                                        <span>{wordCountData.line_count}</span>
                                     </div>
                                 </div>
                             </div>
