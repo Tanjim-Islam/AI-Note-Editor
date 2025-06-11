@@ -1,5 +1,29 @@
-import { Head, Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, Link, usePage } from '@inertiajs/react'
+import { useState } from 'react'
+
+// Avatar component with proper fallback handling
+const AvatarWithFallback = ({ user, size, textSize }) => {
+    const [imageError, setImageError] = useState(false)
+    
+    if (!user.avatar || imageError) {
+        return (
+            <div className={`${size} rounded-full bg-gray-300 flex items-center justify-center border border-gray-200`}>
+                <span className={`${textSize} font-medium text-gray-600`}>
+                    {user.name?.charAt(0)?.toUpperCase()}
+                </span>
+            </div>
+        )
+    }
+    
+    return (
+        <img
+            className={`${size} rounded-full object-cover border border-gray-200`}
+            src={user.avatar}
+            alt={user.name}
+            onError={() => setImageError(true)}
+        />
+    )
+};
 
 export default function App({ children }) {
     const { auth } = usePage().props;
@@ -34,10 +58,10 @@ export default function App({ children }) {
                 {/* Navigation */}
                 <nav className="bg-white shadow-sm border-b border-gray-200">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex justify-between h-16">
-                            <div className="flex">
+                        <div className="flex justify-between items-center h-16">
+                            <div className="flex items-center">
                                 {/* Logo */}
-                                <div className="flex-shrink-0 flex items-center">
+                                <div className="flex-shrink-0">
                                     <Link href="/dashboard" className="text-xl font-bold text-gray-900">
                                         Notes AI
                                     </Link>
@@ -45,16 +69,16 @@ export default function App({ children }) {
                                 
                                 {/* Navigation Links */}
                                 {auth?.user && (
-                                    <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+                                    <div className="hidden sm:ml-8 sm:flex sm:space-x-8">
                                         <Link
                                             href="/dashboard"
-                                            className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
+                                            className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out inline-flex items-center"
                                         >
                                             Dashboard
                                         </Link>
                                         <Link
                                             href="/editor"
-                                            className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
+                                            className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out inline-flex items-center"
                                         >
                                             Editor
                                         </Link>
@@ -65,22 +89,21 @@ export default function App({ children }) {
                             {/* User Menu */}
                             {auth?.user && (
                                 <div className="hidden sm:ml-6 sm:flex sm:items-center">
-                                    <div className="flex items-center space-x-4">
-                                        <div className="flex items-center space-x-2">
-                                            {auth.user.avatar && (
-                                                <img
-                                                    className="h-8 w-8 rounded-full"
-                                                    src={auth.user.avatar}
-                                                    alt={auth.user.name}
-                                                />
-                                            )}
+                                    <div className="flex items-center space-x-3">
+                                        <div className="flex items-center space-x-3">
+                                            <AvatarWithFallback 
+                                                user={auth.user} 
+                                                size="h-8 w-8" 
+                                                textSize="text-sm" 
+                                            />
                                             <span className="text-sm font-medium text-gray-700">
                                                 {auth.user.name}
                                             </span>
                                         </div>
+                                        <div className="h-6 w-px bg-gray-300"></div>
                                         <button
                                             onClick={handleLogout}
-                                            className="text-gray-500 hover:text-gray-700 text-sm font-medium transition duration-150 ease-in-out"
+                                            className="text-gray-500 hover:text-gray-700 text-sm font-medium transition duration-150 ease-in-out px-2 py-1 rounded hover:bg-gray-100"
                                         >
                                             Logout
                                         </button>
@@ -123,14 +146,12 @@ export default function App({ children }) {
                             </div>
                             <div className="pt-4 pb-3 border-t border-gray-200">
                                 <div className="flex items-center px-4">
-                                    {auth.user.avatar && (
-                                        <img
-                                            className="h-10 w-10 rounded-full"
-                                            src={auth.user.avatar}
-                                            alt={auth.user.name}
-                                        />
-                                    )}
-                                    <div className="ml-3">
+                                    <AvatarWithFallback 
+                                         user={auth.user} 
+                                         size="h-10 w-10" 
+                                         textSize="text-lg" 
+                                     />
+                                    <div className="ml-3 flex-1">
                                         <div className="text-base font-medium text-gray-800">{auth.user.name}</div>
                                         <div className="text-sm font-medium text-gray-500">{auth.user.email}</div>
                                     </div>
@@ -138,7 +159,7 @@ export default function App({ children }) {
                                 <div className="mt-3 space-y-1">
                                     <button
                                         onClick={handleLogout}
-                                        className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 w-full text-left"
+                                        className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 w-full text-left transition duration-150 ease-in-out"
                                     >
                                         Logout
                                     </button>
