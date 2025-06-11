@@ -14,6 +14,7 @@ export default function Editor() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [wasAutoSaved, setWasAutoSaved] = useState(false);
     const [wordCountData, setWordCountData] = useState({ word_count: 0, character_count: 0, line_count: 0 });
+    const [copyFeedback, setCopyFeedback] = useState(false);
 
     // Get note ID from URL parameters
     useEffect(() => {
@@ -146,6 +147,57 @@ export default function Editor() {
         setTimeout(() => {
             handleSave(true);
         }, 500);
+    };
+
+    const handleExport = () => {
+        const fileName = title.trim() || 'Untitled Note';
+        const fileContent = content;
+        
+        // Create a blob with the content
+        const blob = new Blob([fileContent], { type: 'text/plain' });
+        
+        // Create a download link
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${fileName}.txt`;
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        
+        // Clean up
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleCopyToClipboard = async () => {
+        try {
+            await navigator.clipboard.writeText(content);
+            setCopyFeedback(true);
+            
+            // Reset feedback after 2 seconds
+            setTimeout(() => {
+                setCopyFeedback(false);
+            }, 2000);
+        } catch (err) {
+            console.error('Failed to copy to clipboard:', err);
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = content;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                setCopyFeedback(true);
+                setTimeout(() => {
+                    setCopyFeedback(false);
+                }, 2000);
+            } catch (fallbackErr) {
+                console.error('Fallback copy failed:', fallbackErr);
+            }
+            document.body.removeChild(textArea);
+        }
     };
 
     // Calculate word count instantly with JavaScript
@@ -368,11 +420,17 @@ export default function Editor() {
                             <div>
                                 <h3 className="text-lg font-medium text-gray-900 mb-3">Quick Actions</h3>
                                 <div className="space-y-2">
-                                    <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition duration-150 ease-in-out">
+                                    <button 
+                                        onClick={handleExport}
+                                        className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition duration-150 ease-in-out"
+                                    >
                                         📤 Export
                                     </button>
-                                    <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition duration-150 ease-in-out">
-                                        📋 Copy to Clipboard
+                                    <button 
+                                        onClick={handleCopyToClipboard}
+                                        className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition duration-150 ease-in-out"
+                                    >
+                                        {copyFeedback ? '✅ Copied!' : '📋 Copy to Clipboard'}
                                     </button>
                                     <button 
                                         onClick={handleDelete}
