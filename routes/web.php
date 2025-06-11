@@ -10,7 +10,7 @@ Route::get('/', function () {
 
 // Login page
 Route::get('/login', function () {
-    return view('login');
+    return Inertia::render('Login');
 })->name('login');
 
 // Google OAuth Routes
