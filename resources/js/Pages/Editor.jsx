@@ -11,6 +11,7 @@ export default function Editor() {
     const [lastSaved, setLastSaved] = useState(null);
     const [error, setError] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [wasAutoSaved, setWasAutoSaved] = useState(false);
 
     // Get note ID from URL parameters
     useEffect(() => {
@@ -54,9 +55,11 @@ export default function Editor() {
     };
 
     // Save note to API
-    const handleSave = async () => {
+    const handleSave = async (isAutoSave = false) => {
         if (!noteId) {
-            alert('Cannot save note: No note ID found');
+            if (!isAutoSave) {
+                alert('Cannot save note: No note ID found');
+            }
             return;
         }
 
@@ -80,9 +83,12 @@ export default function Editor() {
             }
 
             setLastSaved(new Date());
+            setWasAutoSaved(isAutoSave);
         } catch (err) {
             console.error('Error saving note:', err);
-            alert('Failed to save note. Please try again.');
+            if (!isAutoSave) {
+                alert('Failed to save note. Please try again.');
+            }
         } finally {
             setIsSaving(false);
         }
@@ -127,15 +133,16 @@ export default function Editor() {
         if (!noteId || isLoading || isDeleting) return;
 
         const autoSaveTimer = setTimeout(() => {
-            handleSave();
+            handleSave(true); // Pass true to indicate this is an auto-save
         }, 2000); // Auto-save after 2 seconds of inactivity
 
         return () => clearTimeout(autoSaveTimer);
     }, [title, content, noteId, isLoading, isDeleting]);
 
-    const formatLastSaved = (date) => {
+    const formatLastSaved = (date, wasAuto) => {
         if (!date) return 'Never saved';
-        return `Last saved at ${date.toLocaleTimeString()}`;
+        const prefix = wasAuto ? 'Auto-saved at' : 'Last saved at';
+        return `${prefix} ${date.toLocaleTimeString()}`;
     };
 
     // Show loading state
@@ -207,10 +214,13 @@ export default function Editor() {
                         </div>
                         <div className="flex items-center space-x-4">
                             <div className="text-sm text-gray-500">
-                                {formatLastSaved(lastSaved)}
+                                {formatLastSaved(lastSaved, wasAutoSaved)}
                             </div>
                             <button
-                                onClick={handleSave}
+                                onClick={() => {
+                                    handleSave(false); // Manual save
+                                    setWasAutoSaved(false); // Reset auto-save flag for manual saves
+                                }}
                                 disabled={isSaving}
                                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
