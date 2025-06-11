@@ -195,7 +195,7 @@ const AIEnhancer = ({ noteContent, onApplyResult, disabled = false }) => {
                                 <div className="flex items-center gap-2">
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
                                     <span className="text-blue-700 font-medium">
-                                        {activeAction ? `${activeAction.label}ing...` : 'Processing...'}
+                                        {activeAction ? `${activeAction.label === 'Improve Writing' ? 'Improving Writing' : activeAction.label + 'ing'}...` : 'Processing...'}
                                     </span>
                                 </div>
                                 {streamingContent && (
