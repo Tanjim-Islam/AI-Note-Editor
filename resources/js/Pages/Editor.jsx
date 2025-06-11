@@ -10,6 +10,7 @@ export default function Editor() {
     const [isLoading, setIsLoading] = useState(true);
     const [lastSaved, setLastSaved] = useState(null);
     const [error, setError] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Get note ID from URL parameters
     useEffect(() => {
@@ -98,6 +99,7 @@ export default function Editor() {
             return;
         }
 
+        setIsDeleting(true);
         try {
             const response = await fetch(`/api/notes/${noteId}`, {
                 method: 'DELETE',
@@ -122,14 +124,14 @@ export default function Editor() {
 
     // Auto-save functionality
     useEffect(() => {
-        if (!noteId || isLoading) return;
+        if (!noteId || isLoading || isDeleting) return;
 
         const autoSaveTimer = setTimeout(() => {
             handleSave();
         }, 2000); // Auto-save after 2 seconds of inactivity
 
         return () => clearTimeout(autoSaveTimer);
-    }, [title, content, noteId, isLoading]);
+    }, [title, content, noteId, isLoading, isDeleting]);
 
     const formatLastSaved = (date) => {
         if (!date) return 'Never saved';
