@@ -5,7 +5,15 @@ import { useState } from 'react'
 const AvatarWithFallback = ({ user, size, textSize }) => {
     const [imageError, setImageError] = useState(false)
     
-    if (!user.avatar || imageError) {
+    // Debug logging
+    console.log('AvatarWithFallback - user:', user)
+    console.log('AvatarWithFallback - user.avatar:', user.avatar)
+    console.log('AvatarWithFallback - imageError:', imageError)
+    
+    // Check if avatar exists and is a valid URL
+    const hasValidAvatar = user.avatar && typeof user.avatar === 'string' && user.avatar.trim() !== ''
+    
+    if (!hasValidAvatar || imageError) {
         return (
             <div className={`${size} rounded-full bg-gray-300 flex items-center justify-center border border-gray-200`}>
                 <span className={`${textSize} font-medium text-gray-600`}>
@@ -20,7 +28,13 @@ const AvatarWithFallback = ({ user, size, textSize }) => {
             className={`${size} rounded-full object-cover border border-gray-200`}
             src={user.avatar}
             alt={user.name}
-            onError={() => setImageError(true)}
+            onError={(e) => {
+                console.log('Image load error:', e, 'URL:', user.avatar)
+                setImageError(true)
+            }}
+            onLoad={() => {
+                console.log('Image loaded successfully:', user.avatar)
+            }}
         />
     )
 };
