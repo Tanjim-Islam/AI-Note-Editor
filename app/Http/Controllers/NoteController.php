@@ -68,8 +68,16 @@ class NoteController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
-        //
+        $note = Note::findOrFail($id);
+
+        if ($note->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $note->delete();
+
+        return response()->json(['status' => 'deleted']);
     }
 }
