@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Laravel\Socialite\Facades\Socialite;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -22,18 +23,13 @@ class AuthController extends Controller
      */
     public function handleGoogleCallback()
     {
-        \Log::info('Starting Google OAuth callback');
+        Log::info('Starting Google OAuth callback');
         
         try {
-            // Configure Guzzle to ignore SSL verification for local development
-            $googleUser = Socialite::driver('google')
-                ->setHttpClient(new \GuzzleHttp\Client([
-                    'verify' => false, // Disable SSL verification for local development
-                    'timeout' => 30
-                ]))
-                ->user();
+            // Get Google user data
+            $googleUser = Socialite::driver('google')->user();
             
-            \Log::info('Google user data retrieved', ['email' => $googleUser->getEmail()]);
+            Log::info('Google user data retrieved', ['email' => $googleUser->getEmail()]);
             
             $user = User::firstOrCreate(
                 ['email' => $googleUser->getEmail()],
@@ -44,14 +40,14 @@ class AuthController extends Controller
                 ]
             );
             
-            \Log::info('User found/created', ['user_id' => $user->id]);
+            Log::info('User found/created', ['user_id' => $user->id]);
             
             Auth::login($user);
-            \Log::info('User logged in successfully');
+            Log::info('User logged in successfully');
             
             return redirect('/dashboard');
         } catch (\Exception $e) {
-            \Log::error('OAuth callback failed', [
+            Log::error('OAuth callback failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
