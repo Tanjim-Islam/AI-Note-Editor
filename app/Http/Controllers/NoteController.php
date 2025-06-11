@@ -23,9 +23,19 @@ class NoteController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
-        //
+        $request->validate([
+            'title' => 'required|string|max:255',
+        ]);
+
+        $note = Note::create([
+            'title' => $request->title,
+            'user_id' => $request->user()->id,
+            'content' => '',
+        ]);
+
+        return response()->json($note, 201);
     }
 
     /**
