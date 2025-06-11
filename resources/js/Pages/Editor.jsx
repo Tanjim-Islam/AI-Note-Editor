@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import App from '../Components/App';
+import AIEnhancer from '../Components/AIEnhancer';
 
 export default function Editor() {
     const [noteId, setNoteId] = useState(null);
@@ -126,6 +127,24 @@ export default function Editor() {
             console.error('Error deleting note:', err);
             alert('Failed to delete note. Please try again.');
         }
+    };
+
+    const handleAIResult = (result, action) => {
+        if (action.id === 'tags') {
+            // For tags, append to the end of the content
+            setContent(prevContent => {
+                const separator = prevContent.trim() ? '\n\n' : '';
+                return prevContent + separator + '**Tags:** ' + result;
+            });
+        } else {
+            // For summarize and improve, replace the content
+            setContent(result);
+        }
+        
+        // Auto-save after applying AI result
+        setTimeout(() => {
+            handleSave(true);
+        }, 500);
     };
 
     // Auto-save functionality
@@ -279,20 +298,11 @@ export default function Editor() {
                             {/* AI Tools */}
                             <div>
                                 <h3 className="text-lg font-medium text-gray-900 mb-3">AI Tools</h3>
-                                <div className="space-y-2">
-                                    <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition duration-150 ease-in-out">
-                                        📝 Improve Writing
-                                    </button>
-                                    <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition duration-150 ease-in-out">
-                                        📋 Summarize
-                                    </button>
-                                    <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition duration-150 ease-in-out">
-                                        🏷️ Generate Tags
-                                    </button>
-                                    <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition duration-150 ease-in-out">
-                                        🔍 Find Similar
-                                    </button>
-                                </div>
+                                <AIEnhancer 
+                                    noteContent={content}
+                                    onApplyResult={handleAIResult}
+                                    disabled={!content.trim() || isSaving}
+                                />
                             </div>
 
                             {/* Quick Actions */}
