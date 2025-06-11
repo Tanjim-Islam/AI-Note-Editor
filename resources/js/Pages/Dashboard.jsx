@@ -122,7 +122,7 @@ export default function Dashboard() {
                                         <h3 className="text-lg font-semibold text-purple-900 mb-2">AI Assistant</h3>
                                         <p className="text-purple-700 text-sm mb-3">Get help with writing and editing</p>
                                         <span className="text-purple-600 text-sm font-medium">
-                                            Coming soon
+                                            Try it out in a New Note!
                                         </span>
                                     </div>
                                 </div>
